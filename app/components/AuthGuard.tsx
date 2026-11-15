@@ -1,22 +1,25 @@
+// 檔案路徑：components/AuthGuard.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useRouter, usePathname } from 'next/navigation'; // 🚀 合併匯入
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link'; // 🚀 新增 Link 用來跳轉頁面
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname(); // 🚀 取得當前路徑
-  const isAdminRoute = pathname?.startsWith('/admin'); // 🚀 判斷是否為後台
+  const pathname = usePathname();
+  
+  // 🚀 判斷路徑
+  const isAdminRoute = pathname?.startsWith('/admin');
+  const isPublicPage = pathname === '/terms' || pathname === '/privacy'; // ⭐️ 法律頁面白名單
 
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isLogin, setIsLogin] = useState(true);
   
-  // 彈窗狀態
+  // 彈窗狀態（移除了 showTerms 和 showPrivacy）
   const [showOtherOptions, setShowOtherOptions] = useState(false);
   const [showOtpMode, setShowOtpMode] = useState(false);
-  const [showTerms, setShowTerms] = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(false);
   const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
 
   // 表單狀態
@@ -120,7 +123,12 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) return <div className="min-h-screen bg-[#050810]"></div>;
 
-  // 🚀 核心修改：如果是進入後台，直接放行 children，讓後台自己去驗證權限！
+  // ⭐️ 如果是公開頁面（Terms / Privacy），直接放行，不用登入！
+  if (isPublicPage) {
+    return <>{children}</>;
+  }
+
+  // 如果是進入後台，直接放行 children，讓後台自己去驗證權限！
   if (isAdminRoute) {
     return <>{children}</>;
   }
@@ -265,7 +273,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* 🚀 超帥的 Coming Soon 彈窗 */}
+          {/* Coming Soon 彈窗 */}
           {comingSoonFeature && (
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[99999]">
               <div className="bg-gray-800 border border-gray-700 rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl animate-[scaleIn_0.2s_ease-out]">
@@ -279,28 +287,20 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* 底部條款 */}
+          {/* 🚀 底部條款（改為超連結，點擊開新分頁） */}
           <div className="mt-12 text-xs text-gray-600 relative z-10 text-center max-w-md leading-relaxed">
-            By signing up, you agree to our <span onClick={() => setShowTerms(true)} className="text-gray-400 hover:underline cursor-pointer">Terms of Use</span> and <span onClick={() => setShowPrivacy(true)} className="text-gray-400 hover:underline cursor-pointer">Privacy Policy</span>.
+            By signing up, you agree to our{' '}
+            <Link href="/terms" target="_blank" className="text-gray-400 hover:text-white hover:underline cursor-pointer transition-colors">
+              Terms of Use
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" target="_blank" className="text-gray-400 hover:text-white hover:underline cursor-pointer transition-colors">
+              Privacy Policy
+            </Link>.
           </div>
 
-          {/* 條款彈窗 */}
-          {(showTerms || showPrivacy) && (
-            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-[99999]">
-              <div className="bg-[#181a21] w-full max-w-lg rounded-xl p-8 shadow-2xl border border-gray-800">
-                <h2 className="text-2xl font-bold text-white mb-4">{showTerms ? 'Terms of Use' : 'Privacy Policy'}</h2>
-               <div className="space-y-4 text-sm">
-  <p><strong>1. Acceptance of Terms</strong><br/>By accessing Leo Game, you agree to these Terms. If you are under 13, parental consent is required.</p>
-  <p><strong>2. User Accounts</strong><br/>You are responsible for your account security and accurate registration.</p>
-  <p><strong>3. Virtual Currency</strong><br/>Leo Coins and L pieces have no real-world value. All transactions are final. Alpha phase coins are free.</p>
-  <p><strong>4. User Content (UGC)</strong><br/>No illegal, hateful, or copyright-infringing content. Violators will be banned.</p>
-  <p><strong>5. Trading System</strong><br/>We provide a trading tool, not an escrow. Trade at your own risk. Fraud results in account bans.</p>
-  <p><strong>6. Limitation of Liability</strong><br/>The platform is "as is". We are not responsible for player disputes or lost items.</p>
-</div>
-                <button onClick={() => { setShowTerms(false); setShowPrivacy(false); }} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-md">Close</button>
-              </div>
-            </div>
-          )}
+          {/* ⚠️ 舊的條款彈窗已經被我完全刪除啦！ */}
+          
         </div>
       )}
     </>

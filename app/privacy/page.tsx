@@ -1,4 +1,6 @@
 // 檔案路徑：app/privacy/page.tsx
+'use client'
+
 import Link from 'next/link'
 
 export default function PrivacyPage() {
@@ -8,6 +10,7 @@ export default function PrivacyPage() {
         <Link href="/" className="text-yellow-500 hover:text-yellow-400 mb-8 inline-block">
           ← Back to Home
         </Link>
+        
         <h1 className="text-3xl font-bold text-yellow-500 mb-2">Privacy Policy</h1>
         <p className="text-gray-400 mb-8">Last Updated: November 8, 2026</p>
 
