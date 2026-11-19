@@ -2,38 +2,46 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-// ⭐️ 修正路徑：從 app/components 退兩層，找到 lib/supabase
-import { supabase } from '../../lib/supabase' 
+import { supabase } from '../../lib/supabase'
 
 export default function ReleaseCountdown() {
-  // 設定目標日期：2027年1月1日
   const targetDate = new Date('2027-01-01T00:00:00').getTime()
   
-  const [timeLeft, setTimeLeft] = useState({
-    days: 0, hours: 0, minutes: 0, seconds: 0
-  })
-  
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   const [isVisible, setIsVisible] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    // 檢查是否為管理員
-    const checkAdmin = async () => {
+    const init = async () => {
+      // 1. 檢查後台開關
+      const { data: settings } = await supabase.from('site_settings').select('show_countdown').single()
+      if (settings && settings.show_countdown === false) {
+        setIsVisible(false)
+        return
+      }
+
+      // 2. 檢查玩家登入狀態
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        const { data } = await supabase.from('users').select('role').eq('id', session.user.id).single()
-        if (data?.role === 'owner' || data?.role === 'admin') {
-          setIsAdmin(true)
-        }
+        const { data: userData } = await supabase.from('users').select('username').eq('id', session.user.id).single()
+        setUser(userData)
       }
+
+      // 3. 監聽登入狀態改變
+      supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session?.user) {
+          const { data: userData } = await supabase.from('users').select('username').eq('id', session.user.id).single()
+          setUser(userData)
+        } else {
+          setUser(null)
+        }
+      })
     }
-    checkAdmin()
+    init()
 
     // 倒數計時邏輯
     const timer = setInterval(() => {
-      const now = new Date().getTime()
-      const distance = targetDate - now
-
+      const distance = targetDate - new Date().getTime()
       if (distance < 0) {
         clearInterval(timer)
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
@@ -50,17 +58,13 @@ export default function ReleaseCountdown() {
     return () => clearInterval(timer)
   }, [targetDate])
 
-  // 如果管理員按了「進入網站」，或者時間已經到了，就不顯示遮罩
   if (!isVisible) return null
 
   return (
-    <div className="fixed inset-0 z-[999999] bg-[#0a0a0c] flex flex-col items-center justify-center overflow-hidden">
-      
-      {/* 背景特效：發光光暈 */}
+    <div className="fixed inset-0 z-[99999] bg-[#0a0a0c] flex flex-col items-center justify-center overflow-hidden">
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-cyan-500/20 blur-[150px] rounded-full pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-yellow-500/10 blur-[150px] rounded-full pointer-events-none"></div>
 
-      {/* 主要內容 */}
       <div className="relative z-10 text-center px-4">
         <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-200 to-yellow-500 mb-6 drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]">
           THE FUTURE IS COMING
@@ -69,7 +73,6 @@ export default function ReleaseCountdown() {
           Leo Game Official Release
         </p>
 
-        {/* 倒數計時卡片 */}
         <div className="flex gap-4 md:gap-8 justify-center items-center mb-16">
           {[
             { label: 'Days', value: timeLeft.days },
@@ -92,15 +95,24 @@ export default function ReleaseCountdown() {
           Stay tuned. The next-gen UGC platform will be revealed in 2027.
         </div>
 
-        {/* 管理員專屬通道 */}
-        {isAdmin && (
-          <button 
-            onClick={() => setIsVisible(false)}
-            className="mt-8 px-6 py-2 border border-red-500/30 text-red-400 rounded-full text-sm hover:bg-red-500/10 transition-colors"
-          >
-            🔑 Admin Bypass (Enter Website)
-          </button>
-        )}
+        {/* ⭐️ 玩家登入狀態區塊 */}
+        <div className="mt-4">
+          {user ? (
+            <div className="text-green-400 font-bold bg-green-900/30 border border-green-500/50 px-6 py-3 rounded-xl inline-block">
+              ✓ Welcome, {user.username}
+            </div>
+          ) : (
+            <button 
+              onClick={() => {
+                // 觸發事件，讓 AuthGuard 顯示登入框
+                window.dispatchEvent(new CustomEvent('open-auth-modal'));
+              }}
+              className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition shadow-lg"
+            >
+              Sign Up / Log In
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

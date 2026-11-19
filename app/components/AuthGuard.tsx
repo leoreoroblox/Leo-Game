@@ -1,28 +1,25 @@
-// 檔案路徑：components/AuthGuard.tsx
+// 檔案路徑：app/components/AuthGuard.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link'; // 🚀 新增 Link 用來跳轉頁面
+import Link from 'next/link';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   
-  // 🚀 判斷路徑
   const isAdminRoute = pathname?.startsWith('/admin');
-  const isPublicPage = pathname === '/terms' || pathname === '/privacy'; // ⭐️ 法律頁面白名單
+  const isPublicPage = pathname === '/terms' || pathname === '/privacy';
 
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isLogin, setIsLogin] = useState(true);
   
-  // 彈窗狀態（移除了 showTerms 和 showPrivacy）
   const [showOtherOptions, setShowOtherOptions] = useState(false);
   const [showOtpMode, setShowOtpMode] = useState(false);
   const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
 
-  // 表單狀態
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -123,12 +120,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) return <div className="min-h-screen bg-[#050810]"></div>;
 
-  // ⭐️ 如果是公開頁面（Terms / Privacy），直接放行，不用登入！
   if (isPublicPage) {
     return <>{children}</>;
   }
 
-  // 如果是進入後台，直接放行 children，讓後台自己去驗證權限！
   if (isAdminRoute) {
     return <>{children}</>;
   }
@@ -256,7 +251,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          {/* 其他登入選項彈窗 */}
           {showOtherOptions && (
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]">
               <div className="bg-[#181a21] w-full max-w-sm rounded-xl p-6 shadow-2xl border border-gray-800 relative">
@@ -273,7 +267,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Coming Soon 彈窗 */}
           {comingSoonFeature && (
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[99999]">
               <div className="bg-gray-800 border border-gray-700 rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl animate-[scaleIn_0.2s_ease-out]">
@@ -287,7 +280,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* 🚀 底部條款（改為超連結，點擊開新分頁） */}
           <div className="mt-12 text-xs text-gray-600 relative z-10 text-center max-w-md leading-relaxed">
             By signing up, you agree to our{' '}
             <Link href="/terms" target="_blank" className="text-gray-400 hover:text-white hover:underline cursor-pointer transition-colors">
@@ -298,9 +290,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
               Privacy Policy
             </Link>.
           </div>
-
-          {/* ⚠️ 舊的條款彈窗已經被我完全刪除啦！ */}
-          
         </div>
       )}
     </>

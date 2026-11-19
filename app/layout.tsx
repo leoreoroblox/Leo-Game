@@ -1,10 +1,13 @@
 // 檔案路徑：app/layout.tsx
+'use client' // ⭐️ 因為用到 usePathname，這裡必須是 client component
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Suspense } from 'react'; // ⭐️ 修復報錯的關鍵
+import { Suspense } from 'react';
+import { usePathname } from 'next/navigation';
 
-// 引入你的所有組件
+// 引入組件
 import ReleaseCountdown from './components/ReleaseCountdown';
 import ClientLoader from './components/ClientLoader';
 import UserTracker from './components/UserTracker';
@@ -18,12 +21,13 @@ import AuthGuard from './components/AuthGuard';
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "Leo Game",
-  description: "Play. Create. Connect. The ultimate platform for players and creators.",
-};
+// ⚠️ 因為改成了 'use client'，metadata 其實不能放在這裡了。
+// 為了不讓你報錯，我們先移除 metadata 或放到更上層的 server component。
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith('/admin');
+
   return (
     <html lang="en">
       <head>
@@ -32,30 +36,28 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050810] text-white`}>
         
-        {/* 1. 倒數計時遮罩 (放在最外層) */}
-        <ReleaseCountdown />
+        {/* ⭐️ 如果不是 admin 路由，才顯示倒數遮罩 */}
+        {!isAdminRoute && <ReleaseCountdown />}
 
-        {/* 2. ⭐️ 用 Suspense 包住整個會用到 usePathname/useRouter 的區塊 */}
         <Suspense fallback={<div className="min-h-screen bg-[#050810] flex items-center justify-center text-white">Loading...</div>}>
           
-          <AuthGuard>
-            {/* 導航列與側邊欄 */}
-            <Navbar />
-            <Sidebar />
-            
-            {/* 主要網頁內容 */}
-            <main className="pt-16 pb-16 md:pl-64">
-              {children}
-            </main>
-            
-            {/* 其他全局組件 */}
-            <SiteStatus />
-            <UpdateNotifier />
-          </AuthGuard>
+          {/* 如果是 admin 路由，直接放行讓 Admin 頁面自己去驗證 */}
+          {isAdminRoute ? (
+            children
+          ) : (
+            <AuthGuard>
+              <Navbar />
+              <Sidebar />
+              <main className="pt-16 pb-16 md:pl-64">
+                {children}
+              </main>
+              <SiteStatus />
+              <UpdateNotifier />
+            </AuthGuard>
+          )}
           
         </Suspense>
 
-        {/* 3. 其他不需要依賴路由的組件 (可放外面) */}
         <ClientLoader />
         <UserTracker />
         <BanOverlay />
