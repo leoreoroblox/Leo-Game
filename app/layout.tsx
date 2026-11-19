@@ -1,16 +1,20 @@
+// 檔案路徑：app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Suspense } from 'react';
+
+// ⭐️ 修正引入路徑：因為組件在 app/components 裡面
+import ReleaseCountdown from './components/ReleaseCountdown';
 
 import ClientLoader from './components/ClientLoader';
 import UserTracker from './components/UserTracker';
 import BanOverlay from './components/BanOverlay';
 import SiteStatus from './components/SiteStatus';
 import UpdateNotifier from './components/UpdateNotifier';
-import Navbar from './components/Navbar'; 
-import Sidebar from './components/Sidebar'; 
-import AuthGuard from './components/AuthGuard'; 
+import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+import AuthGuard from './components/AuthGuard';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -26,34 +30,22 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <meta name="theme-color" content="#06b6d4" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050810] text-white`}>
         
-        <Suspense fallback={<div className="min-h-screen bg-[#050810]" />}>
-          <AuthGuard>
-            <Suspense fallback={null}>
-              <SiteStatus />
-              <ClientLoader />
-              <UserTracker />
-              <BanOverlay />
-              <UpdateNotifier />
-            </Suspense>
+        {/* ⭐️ 將倒數計時遮罩放在最外層，它會覆蓋全站 */}
+        <ReleaseCountdown />
 
-            <Navbar /> 
-            
-            <div className="flex min-h-screen pt-16">
-              <Suspense fallback={<div className="w-64 bg-gray-950 hidden md:block fixed left-0 top-16 h-[calc(100vh-4rem)] border-r border-gray-800" />}>
-                <Sidebar />
-              </Suspense>
-              
-              {/* 🚀 這裡加上了 relative，確保 3D 高度正確 */}
-              <main className="flex-1 md:ml-64 w-full relative">
-                {children}
-              </main>
-            </div>
-          </AuthGuard>
-        </Suspense>
+        {/* 其他你原本的組件 */}
+        <AuthGuard>
+          <Navbar />
+          <Sidebar />
+          <main className="pt-16 pb-16 md:pl-64">
+            {children}
+          </main>
+          <SiteStatus />
+          <UpdateNotifier />
+        </AuthGuard>
 
       </body>
     </html>
